@@ -1,0 +1,193 @@
+// CustomNetworkManager.cs
+
+using Mirror;
+using UnityEngine;
+
+public class CustomNetworkManager : NetworkManager
+{
+    private static CustomNetworkManager instance;
+
+    public static CustomNetworkManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = Object.FindAnyObjectByType<CustomNetworkManager>();
+            }
+            return instance;
+        }
+    }
+
+    public override void Awake()
+    {
+        base.Awake();
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject); // Destroy duplicate instances
+        }
+        else
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject); // Keep this manager between scenes
+        }
+    }
+
+    internal void StartMatch()
+    {
+        throw new System.NotImplementedException();
+    }
+}
+
+// LobbyManager.cs
+
+using Mirror;
+using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
+
+public class LobbyManager : MonoBehaviour
+{
+    public Transform playerListPanel;  // Panel that holds player entries
+    public GameObject playerEntryPrefab; // Prefab for each player entry
+    public TMP_Text lobbyTitle;  // Title of the lobby UI
+    public Button startMatchButton;  // Button to start the match
+
+    void Start()
+    {
+        // Ensure only the host can start the match
+        if (NetworkServer.active)
+        {
+            startMatchButton.gameObject.SetActive(true);  // Only show the button for the host
+            startMatchButton.onClick.AddListener(() =>
+            {
+                CustomNetworkManager networkManager = Object.FindAnyObjectByType<CustomNetworkManager>();
+                if (networkManager != null)
+                {
+                    networkManager.StartMatch();
+                }
+                else
+                {
+                    Debug.LogError("CustomNetworkManager not found!");
+                }
+            });
+        }
+        else
+        {
+            startMatchButton.gameObject.SetActive(false);
+        }
+
+        UpdatePlayerList();
+    }
+
+    // Update the player list based on the players connected
+    public void UpdatePlayerList()
+    {
+        foreach (Transform child in playerListPanel)
+        {
+            Destroy(child.gameObject);  // Clear existing entries
+        }
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            GameObject entry = Instantiate(playerEntryPrefab, playerListPanel);
+            entry.GetComponent<TMP_Text>().text = $"Player {conn.connectionId}";  // Display player ID or name
+        }
+    }
+
+    // Optional: Call this to refresh the player list when a new player joins
+    public void OnPlayerAdded()
+    {
+        UpdatePlayerList();
+    }
+} 
+
+// NetworkHUD.cs
+
+using Mirror;
+using UnityEngine;
+using TMPro;
+
+public class NetworkHUD : MonoBehaviour
+{
+    public TMP_Text connectionStatusText;
+
+    void Update()
+    {
+        if (NetworkClient.isConnected)
+        {
+            connectionStatusText.text = "Connected to server!";
+        }
+        else
+        {
+            connectionStatusText.text = "Not connected.";
+        }
+    }
+}
+
+// AIController
+
+using UnityEngine;
+using Mirror;
+
+public class AIController : NetworkBehaviour
+{
+    void Start()
+    {
+        if (!isServer) return;
+        // Simple AI movement (Replace with real AI logic)
+        InvokeRepeating(nameof(RandomMove), 2f, 3f);
+    }
+
+    void RandomMove()
+    {
+        transform.position += new Vector3(Random.Range(-2, 2), 0, Random.Range(-2, 2));
+    }
+}
+
+// CustomPlayerController.cs
+
+using UnityEngine;
+
+public class CustomPlayerController : MonoBehaviour
+{
+    void Update()
+    {
+        // Add movement, shooting, and interaction code for the player
+        // You can integrate it with your existing GameKit or custom controller
+    }
+}
+
+// CustomPlayerController
+
+using UnityEngine;
+
+public class CustomPlayerController : MonoBehaviour
+{
+    void Update()
+    {
+        // Add movement, shooting, and interaction code for the player
+        // You can integrate it with your existing GameKit or custom controller
+    }
+}
+
+// PlayerSetup
+
+using Mirror;
+using UnityEngine;
+
+public class PlayerSetup : NetworkBehaviour
+{
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+        // Add local player-specific setup here (camera control, etc.)
+    }
+
+    // You can add additional player setup logic if needed (health, etc.)
+}
+
+
+
+
+
